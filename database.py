@@ -1,4 +1,4 @@
-```python
+python
 import sqlite3
 
 DATABASE = "students.db"
