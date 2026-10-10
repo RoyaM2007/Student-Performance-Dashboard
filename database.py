@@ -1,54 +1,37 @@
+```python
+import sqlite3
 
-import pyodbc
-
-from config import SERVER, DATABASE, DRIVER
+DATABASE = "students.db"
 
 
 def create_connection():
-    """SQL Server verilənlər bazasına bağlantı yaradır."""
-
-    connection_string = (
-        f"DRIVER={DRIVER};"
-        f"SERVER={SERVER};"
-        f"DATABASE={DATABASE};"
-        "Trusted_Connection=yes;"
-        "TrustServerCertificate=yes;"
-    )
-
-    return pyodbc.connect(connection_string)
+    """Verilənlər bazasına bağlantı yaradır."""
+    return sqlite3.connect(DATABASE)
 
 
 def add_student(student_name, score):
-    """Yeni tələbəni verilənlər bazasına əlavə edir."""
-
+    """Yeni tələbə əlavə edir."""
     connection = create_connection()
 
     try:
-        cursor = connection.cursor()
-
-        cursor.execute(
+        connection.execute(
             """
             INSERT INTO Students (StudentName, Score)
             VALUES (?, ?)
             """,
             (student_name, score)
         )
-
         connection.commit()
-
     finally:
         connection.close()
 
 
 def get_students():
-    """Bütün tələbələri verilənlər bazasından qaytarır."""
-
+    """Bütün tələbələri qaytarır."""
     connection = create_connection()
 
     try:
-        cursor = connection.cursor()
-
-        cursor.execute(
+        cursor = connection.execute(
             """
             SELECT StudentID, StudentName, Score
             FROM Students
@@ -56,30 +39,24 @@ def get_students():
             """
         )
 
-        students = []
-
-        for row in cursor.fetchall():
-            students.append({
+        return [
+            {
                 "StudentID": row[0],
                 "Name": row[1],
                 "Score": row[2]
-            })
-
-        return students
-
+            }
+            for row in cursor.fetchall()
+        ]
     finally:
         connection.close()
 
 
 def get_student(student_name):
-    """Adına görə tələbələri axtarır."""
-
+    """Ada görə tələbələri axtarır."""
     connection = create_connection()
 
     try:
-        cursor = connection.cursor()
-
-        cursor.execute(
+        cursor = connection.execute(
             """
             SELECT StudentID, StudentName, Score
             FROM Students
@@ -89,16 +66,36 @@ def get_student(student_name):
             (f"%{student_name}%",)
         )
 
-        students = []
-
-        for row in cursor.fetchall():
-            students.append({
+        return [
+            {
                 "StudentID": row[0],
                 "Name": row[1],
                 "Score": row[2]
-            })
-
-        return students
-
+            }
+            for row in cursor.fetchall()
+        ]
     finally:
         connection.close()
+
+
+def initialize_database():
+    """Cədvəl mövcud deyilsə, yaradır."""
+    connection = create_connection()
+
+    try:
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS Students (
+                StudentID INTEGER PRIMARY KEY AUTOINCREMENT,
+                StudentName TEXT NOT NULL,
+                Score INTEGER NOT NULL CHECK (Score BETWEEN 0 AND 100)
+            )
+            """
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+
+initialize_database()
+```
